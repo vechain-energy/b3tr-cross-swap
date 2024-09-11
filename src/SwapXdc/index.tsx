@@ -1,52 +1,51 @@
 import React from 'react';
-import { APP_DESCRIPTION, APP_TITLE, RECIPIENT_ADDRESS } from '~/config';
+import { APP_DESCRIPTION, APP_TITLE, SWAP_ADDRESS, B3TR_ADDRESS } from '~/config';
 import { useWallet, useConnex } from '@vechain/dapp-kit-react';
-import { clauseBuilder, unitsUtils } from '@vechain/sdk-core';
+import { clauseBuilder, FunctionFragment, unitsUtils } from '@vechain/sdk-core';
 import Transaction from './Transaction';
 import Error from '~/common/Error';
-import SelectToken from './SelectToken';
-import type { Token } from './types';
 import Balance from './Balance';
+import PendingTransactions from './PendingTransactions';
 
-export default function BuyCoffee() {
+export default function SwapB3TR() {
     // get the connected wallet
     const { account } = useWallet();
 
     // and access to connex for interaction with vechain
     const connex = useConnex()
 
-    // state for the currently selected token
-    const [selectedToken, setSelectedToken] = React.useState<Token | undefined>()
-
     // state for the amount to send
     const [amount, setAmount] = React.useState<string>('')
     const handleChangeAmount = async (event: React.ChangeEvent<HTMLInputElement>) => setAmount(event.target.value)
+
+    const [recipientAddress, setRecipientAddress] = React.useState<string>('')
+    const [recipientNetwork] = React.useState<string>('xdc')
+    const handleChangeRecipientAddress = async (event: React.ChangeEvent<HTMLInputElement>) => setRecipientAddress(event.target.value)
 
     // state for sending status
     const [txId, setTxId] = React.useState<string>('')
     const [error, setError] = React.useState<string>('')
     const handleSend = async () => {
-        if (!account || !RECIPIENT_ADDRESS) { return }
+        if (!account || !SWAP_ADDRESS) { return }
+
+        // Validate recipient address
+        const recipientAddressPattern = /^(xdc)[0-9A-Za-z]{30,70}$/
+        if (!recipientAddressPattern.test(recipientAddress)) {
+            setError('Invalid recipient address')
+            return
+        }
 
         try {
             setError('')
 
             const clauses = [
                 {
-                    ...(
-
-                        // if a token was selected, transfer the token
-                        selectedToken
-
-                            // the clauseBuilder helps build the data for the transaction
-                            ? clauseBuilder.transferToken(selectedToken.address, RECIPIENT_ADDRESS, unitsUtils.parseUnits(amount, selectedToken.decimals))
-
-                            // or use the clauseBuilder to transfer VET by default
-                            : clauseBuilder.transferVET(RECIPIENT_ADDRESS, unitsUtils.parseVET(amount))
-                    ),
-
-                    // an optional comment is shown to the user in the wallet
-                    comment: 'Send ' + amount + ' ' + (selectedToken?.symbol ?? 'VET'),
+                    ...clauseBuilder.functionInteraction(B3TR_ADDRESS, 'approve(address,uint256)' as unknown as FunctionFragment, [SWAP_ADDRESS, unitsUtils.parseUnits(amount, 18)]),
+                    comment: 'Approve Swap Contract to access B3TR'
+                },
+                {
+                    ...clauseBuilder.functionInteraction(SWAP_ADDRESS, 'function swapB3TRTokenTo(uint256 amount, string recipient, string network)' as unknown as FunctionFragment, [unitsUtils.parseUnits(amount, 18), recipientAddress, recipientNetwork]),
+                    comment: 'Initiate a Swap'
                 }
             ]
 
@@ -89,12 +88,27 @@ export default function BuyCoffee() {
                         value={amount}
                         onChange={handleChangeAmount}
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center">
-                        <SelectToken onChange={setSelectedToken} />
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2">
+                        B3TR
                     </div>
                 </div>
                 <div className='text-xs text-gray-400 text-right cursor-pointer'>
-                    <Balance token={selectedToken} onClick={setAmount} />
+                    <Balance onClick={setAmount} />
+                </div>
+            </div>
+
+            <div>
+                <div className="relative mt-2 rounded-md shadow-sm">
+                    <input
+                        type="text"
+                        name="recipientAddress"
+                        id="recipientAddress"
+                        className="block w-full rounded-md border-0 py-1.5 pl-2 pr-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                        placeholder="xdc.."
+                        autoComplete="off"
+                        value={recipientAddress}
+                        onChange={handleChangeRecipientAddress}
+                    />
                 </div>
             </div>
 
@@ -104,13 +118,15 @@ export default function BuyCoffee() {
                     disabled={!canSend}
                     onClick={handleSend}
                 >
-                    send {amount} {selectedToken?.symbol ?? 'VET'}
+                    send {amount} B3TR
                 </button>
 
             </div>
 
             {Boolean(error) && <Error>{error}</Error>}
             <Transaction txId={txId} />
+
+            <PendingTransactions />
         </div>
     )
 }

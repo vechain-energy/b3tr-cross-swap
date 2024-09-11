@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NODE_URL, NETWORK, WALLET_CONNECT_PROJECT_ID, APP_TITLE, APP_DESCRIPTION, APP_ICONS } from '~/config';
 import { Helmet } from "react-helmet";
 import Layout from './Layout';
-import BuyCoffee from './BuyCoffee';
+import SwapXdc from './SwapXdc';
 
 // define wallet connect options only in case a project id has been provided
 const walletConnectOptions = !WALLET_CONNECT_PROJECT_ID ? undefined : {
@@ -28,7 +28,7 @@ export default function App() {
             </Helmet>
 
             <Layout>
-                <BuyCoffee />
+                <SwapXdc />
             </Layout>
         </Providers>
     )

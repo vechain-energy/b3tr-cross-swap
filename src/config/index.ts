@@ -1,6 +1,10 @@
-// your address where payments will be sent to
-export const RECIPIENT_ADDRESS = process.env.RECIPIENT_ADDRESS ?? ""
-if(!RECIPIENT_ADDRESS) { throw new Error("RECIPIENT_ADDRESS must be set") }
+// the b3tr swap contract
+export const SWAP_ADDRESS = process.env.SWAP_ADDRESS ?? ""
+if(!SWAP_ADDRESS) { throw new Error("SWAP_ADDRESS must be set") }
+
+// the b3tr token contract
+export const B3TR_ADDRESS = process.env.B3TR_ADDRESS ?? ""
+if(!B3TR_ADDRESS) { throw new Error("B3TR_ADDRESS must be set") }
 
 // obtain on https://cloud.walletconnect.com/
 // must be set to enable VeWorld mobile connections on Desktop
