@@ -53,7 +53,7 @@ function Transaction({ txId }: { txId: string }) {
                     "inputs": [
                         {
                             "internalType": "bytes32",
-                            "name": "",
+                            "name": "transactionId",
                             "type": "bytes32"
                         }
                     ],
